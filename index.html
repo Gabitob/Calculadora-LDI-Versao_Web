@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Cálculo Avançado</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container-principal">
+
+        <aside class="painel-instrucoes">
+            <h2>Como Usar</h2>
+            <table class="tabela-instrucoes">
+                <thead>
+                    <tr>
+                        <th>Campo</th>
+                        <th>Descrição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Função f(x)</strong></td>
+                        <td>Digite a expressão matemática. Ex: x^2 + 2*x - 3</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Variável</strong></td>
+                        <td>A variável da função (padrão: x)</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Tende a</strong></td>
+                        <td>Para limites: valor ou "inf" para infinito</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ordem</strong></td>
+                        <td>Para derivadas: número de vezes a derivar</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lim. Inferior</strong></td>
+                        <td>Para integrais definidas: valor inicial</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Lim. Superior</strong></td>
+                        <td>Para integrais definidas: valor final</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="secao-operadores">
+                <h3>Operadores</h3>
+                <ul>
+                    <li><code>+</code> Adição</li>
+                    <li><code>-</code> Subtração</li>
+                    <li><code>*</code> Multiplicação</li>
+                    <li><code>/</code> Divisão</li>
+                    <li><code>^</code> Potência</li>
+                    <li><code>sin, cos, tan</code> Trigonométricas</li>
+                    <li><code>sqrt</code> Raiz quadrada</li>
+                    <li><code>ln, log</code> Logaritmos</li>
+                </ul>
+            </div>
+        </aside>
+
+        <div class="calculadora">
+            <header>
+                <h1>Cálculo Avançado</h1>
+            </header>
+
+        <div class="abas">
+            <button class="aba-btn ativa" onclick="mudarAba('limites')">Limites</button>
+            <button class="aba-btn" onclick="mudarAba('derivadas')">Derivadas</button>
+            <button class="aba-btn" onclick="mudarAba('integrais')">Integrais</button>
+        </div>
+
+        <div id="limites" class="conteudo-aba ativo">
+            <div class="grupo-input">
+                <label for="f-limite">Função f(x)</label>
+                <input type="text" id="f-limite" placeholder="Ex: (x^2 - 1) / (x - 1)">
+            </div>
+            <div class="grupo-input linha">
+                <div>
+                    <label for="limite-v">Variável</label>
+                    <input type="text" id="limite-v" value="x" placeholder="x">
+                </div>
+                <div>
+                    <label for="limite-tende">Tende a</label>
+                    <input type="text" id="limite-tende" placeholder="Ex: 1 ou inf">
+                </div>
+            </div>
+            <button class="btn-calcular" onclick="calcular('limites')">Calcular Limite</button>
+        </div>
+
+        <div id="derivadas" class="conteudo-aba">
+            <div class="grupo-input">
+                <label for="f-derivada">Função f(x)</label>
+                <input type="text" id="f-derivada" placeholder="Ex: 3*x^2 + 5*x - 2">
+            </div>
+            <div class="grupo-input linha">
+                <div>
+                    <label for="derivada-v">Variável</label>
+                    <input type="text" id="derivada-v" value="x" placeholder="x">
+                </div>
+                <div>
+                    <label for="derivada-ordem">Ordem</label>
+                    <input type="number" id="derivada-ordem" value="1" min="1" placeholder="1">
+                </div>
+            </div>
+            <button class="btn-calcular" onclick="calcular('derivadas')">Calcular Derivada</button>
+        </div>
+
+        <div id="integrais" class="conteudo-aba">
+            <div class="grupo-input">
+                <label for="f-integral">Função f(x)</label>
+                <input type="text" id="f-integral" placeholder="Ex: sin(x) + x^3">
+            </div>
+            <div class="grupo-input linha">
+                <div>
+                    <label for="integral-v">Variável</label>
+                    <input type="text" id="integral-v" value="x" placeholder="x">
+                </div>
+                <div>
+                    <label for="int-inf">Lim. Inferior (Opcional)</label>
+                    <input type="text" id="int-inf" placeholder="Ex: 0">
+                </div>
+                <div>
+                    <label for="int-sup">Lim. Superior (Opcional)</label>
+                    <input type="text" id="int-sup" placeholder="Ex: pi">
+                </div>
+            </div>
+            <button class="btn-calcular" onclick="calcular('integrais')">Calcular Integral</button>
+        </div>
+
+        <div class="painel-resultado">
+            <div class="resultado-titulo">Resultado</div>
+            <div id="resultado" class="resultado-texto">Insira os dados e clique em calcular...</div>
+        </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
