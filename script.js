@@ -572,7 +572,7 @@ function mudarAba(idAba) {
 
 let chartInstance = null;
 
-function gerarGrafico(funcao, variavel, tipo) {
+function gerarGrafico(ast, variavel, tipo, funcaoOriginal, resultadoAST = null, limitePara = null, valorLimite = null, limitesIntegral = null) {
     const canvas = document.getElementById('grafico');
     const ctx = canvas.getContext('2d');
 
@@ -581,7 +581,7 @@ function gerarGrafico(funcao, variavel, tipo) {
     }
 
     try {
-        const ast = parse(funcao);
+        const astParaPlotar = resultadoAST || ast;
         const pontos = 100;
         const xMin = -10;
         const xMax = 10;
@@ -593,7 +593,7 @@ function gerarGrafico(funcao, variavel, tipo) {
         for (let i = 0; i <= pontos; i++) {
             const x = xMin + i * step;
             try {
-                const y = evaluate(ast, { [variavel]: x });
+                const y = evaluate(astParaPlotar, { [variavel]: x });
                 if (Number.isFinite(y) && Math.abs(y) < 1000) {
                     labels.push(x.toFixed(2));
                     data.push(y);
@@ -608,22 +608,112 @@ function gerarGrafico(funcao, variavel, tipo) {
         }
 
         const cor = tipo === 'limites' ? '#6366f1' : tipo === 'derivadas' ? '#10b981' : '#f59e0b';
+        const label = tipo === 'limites' ? `f(${variavel}) = ${funcaoOriginal}` :
+                     tipo === 'derivadas' ? `f'(${variavel}) = ${astToString(astParaPlotar)}` :
+                     (limitesIntegral ? `f(${variavel}) = ${funcaoOriginal}` : `∫ f(${variavel}) = ${astToString(astParaPlotar)}`);
+
+        const datasets = [{
+            label: label,
+            data: data,
+            borderColor: cor,
+            backgroundColor: cor + '20',
+            borderWidth: 2,
+            fill: tipo === 'integrais' && limitesIntegral,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 5
+        }];
+
+        // Para integrais definidas, destacar área entre os limites
+        if (tipo === 'integrais' && limitesIntegral) {
+            const { a, b } = limitesIntegral;
+            const areaData = new Array(data.length).fill(null);
+            
+            for (let i = 0; i < labels.length; i++) {
+                const x = parseFloat(labels[i]);
+                if (x >= a && x <= b) {
+                    areaData[i] = data[i];
+                }
+            }
+
+            datasets.unshift({
+                label: `Área de ${a} a ${b}`,
+                data: areaData,
+                borderColor: 'transparent',
+                backgroundColor: 'rgba(245, 158, 11, 0.4)',
+                fill: 'start',
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 0
+            });
+
+            // Adicionar linhas verticais nos limites
+            const yMin = Math.min(...data.filter(d => d !== null));
+            const yMax = Math.max(...data.filter(d => d !== null));
+            
+            const linhaAData = new Array(data.length).fill(null);
+            const linhaBData = new Array(data.length).fill(null);
+            
+            const indexA = labels.findIndex(l => Math.abs(parseFloat(l) - a) < step / 2);
+            const indexB = labels.findIndex(l => Math.abs(parseFloat(l) - b) < step / 2);
+            
+            if (indexA !== -1) {
+                linhaAData[indexA] = yMax;
+                datasets.push({
+                    label: `Limite inferior (${a})`,
+                    data: linhaAData,
+                    borderColor: '#f59e0b',
+                    backgroundColor: '#f59e0b',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointStyle: 'circle',
+                    showLine: false
+                });
+            }
+            
+            if (indexB !== -1) {
+                linhaBData[indexB] = yMax;
+                datasets.push({
+                    label: `Limite superior (${b})`,
+                    data: linhaBData,
+                    borderColor: '#ef4444',
+                    backgroundColor: '#ef4444',
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    pointStyle: 'circle',
+                    showLine: false
+                });
+            }
+        }
+
+        if (tipo === 'limites' && limitePara !== null && !isNaN(limitePara)) {
+            const yLimite = evaluate(astParaPlotar, { [variavel]: limitePara });
+            const yParaPlotar = (Number.isFinite(yLimite) && Math.abs(yLimite) < 1000) ? yLimite : valorLimite;
+
+            if (yParaPlotar !== null && Number.isFinite(yParaPlotar)) {
+                const pontoIndex = labels.findIndex(l => Math.abs(parseFloat(l) - limitePara) < step / 2);
+                if (pontoIndex !== -1) {
+                    const pontoData = new Array(data.length).fill(null);
+                    pontoData[pontoIndex] = yParaPlotar;
+                    datasets.push({
+                        label: `Ponto limite (${variavel} = ${limitePara}, y = ${formatNumber(yParaPlotar)})`,
+                        data: pontoData,
+                        borderColor: '#f59e0b',
+                        backgroundColor: '#f59e0b',
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        pointStyle: 'circle',
+                        showLine: false
+                    });
+                }
+            }
+        }
 
         chartInstance = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: labels,
-                datasets: [{
-                    label: `f(${variavel}) = ${funcao}`,
-                    data: data,
-                    borderColor: cor,
-                    backgroundColor: cor + '20',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4,
-                    pointRadius: 0,
-                    pointHoverRadius: 5
-                }]
+                datasets: datasets
             },
             options: {
                 responsive: true,
@@ -679,19 +769,61 @@ function calcular(tipo) {
 
     let funcao = '';
     let variavel = 'x';
+    let ast = null;
+    let resultadoAST = null;
+    let limitePara = null;
+    let valorLimite = null;
+    let limitesIntegral = null;
 
     if (tipo === 'limites') {
         funcao = document.getElementById('f-limite').value;
         variavel = document.getElementById('limite-v').value.trim() || 'x';
+        const tende = document.getElementById('limite-tende').value;
+        if (funcao) {
+            ast = parse(funcao);
+            const t = tende.trim().toLowerCase();
+            const inf = ['inf', '+inf', '∞', '+∞', 'infinito', '+infinito'];
+            const negInf = ['-inf', '-∞', '-infinito'];
+            if (!inf.includes(t) && !negInf.includes(t)) {
+                limitePara = parseFloat(tende);
+            }
+            // Extrair o valor do limite do resultado
+            const match = resultado.match(/=\s*([\d.]+)/);
+            if (match) {
+                valorLimite = parseFloat(match[1]);
+            }
+        }
     } else if (tipo === 'derivadas') {
         funcao = document.getElementById('f-derivada').value;
         variavel = document.getElementById('derivada-v').value.trim() || 'x';
+        const ordem = parseInt(document.getElementById('derivada-ordem').value, 10) || 1;
+        if (funcao) {
+            ast = parse(funcao);
+            resultadoAST = ast;
+            for (let i = 0; i < ordem; i++) {
+                resultadoAST = simplify(derivative(resultadoAST, variavel));
+            }
+        }
     } else if (tipo === 'integrais') {
         funcao = document.getElementById('f-integral').value;
         variavel = document.getElementById('integral-v').value.trim() || 'x';
+        const inf = document.getElementById('int-inf').value.trim();
+        const sup = document.getElementById('int-sup').value.trim();
+        if (funcao) {
+            ast = parse(funcao);
+            resultadoAST = integral(ast, variavel);
+            // Se for integral definida, passar os limites
+            if (inf && sup) {
+                const a = parseFloat(inf);
+                const b = parseFloat(sup);
+                if (!isNaN(a) && !isNaN(b)) {
+                    limitesIntegral = { a, b };
+                }
+            }
+        }
     }
 
-    if (funcao) {
-        gerarGrafico(funcao, variavel, tipo);
+    if (ast) {
+        gerarGrafico(ast, variavel, tipo, funcao, resultadoAST, limitePara, valorLimite, limitesIntegral);
     }
 }
