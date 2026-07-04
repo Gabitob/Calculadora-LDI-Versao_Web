@@ -570,8 +570,128 @@ function mudarAba(idAba) {
     document.getElementById('resultado').innerHTML = 'Insira os dados e clique em calcular...';
 }
 
+let chartInstance = null;
+
+function gerarGrafico(funcao, variavel, tipo) {
+    const canvas = document.getElementById('grafico');
+    const ctx = canvas.getContext('2d');
+
+    if (chartInstance) {
+        chartInstance.destroy();
+    }
+
+    try {
+        const ast = parse(funcao);
+        const pontos = 100;
+        const xMin = -10;
+        const xMax = 10;
+        const step = (xMax - xMin) / pontos;
+
+        const labels = [];
+        const data = [];
+
+        for (let i = 0; i <= pontos; i++) {
+            const x = xMin + i * step;
+            try {
+                const y = evaluate(ast, { [variavel]: x });
+                if (Number.isFinite(y) && Math.abs(y) < 1000) {
+                    labels.push(x.toFixed(2));
+                    data.push(y);
+                } else {
+                    labels.push(x.toFixed(2));
+                    data.push(null);
+                }
+            } catch (e) {
+                labels.push(x.toFixed(2));
+                data.push(null);
+            }
+        }
+
+        const cor = tipo === 'limites' ? '#6366f1' : tipo === 'derivadas' ? '#10b981' : '#f59e0b';
+
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `f(${variavel}) = ${funcao}`,
+                    data: data,
+                    borderColor: cor,
+                    backgroundColor: cor + '20',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        labels: {
+                            color: '#f8fafc',
+                            font: {
+                                size: 12
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        display: true,
+                        title: {
+                            display: true,
+                            text: variavel,
+                            color: '#94a3b8'
+                        },
+                        ticks: {
+                            color: '#94a3b8',
+                            maxTicksLimit: 10
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        }
+                    },
+                    y: {
+                        display: true,
+                        ticks: {
+                            color: '#94a3b8'
+                        },
+                        grid: {
+                            color: 'rgba(148, 163, 184, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao gerar gráfico:', error);
+    }
+}
+
 function calcular(tipo) {
     const painelResultado = document.getElementById('resultado');
     const resultado = calculateFormula(tipo);
     painelResultado.innerHTML = resultado;
+
+    let funcao = '';
+    let variavel = 'x';
+
+    if (tipo === 'limites') {
+        funcao = document.getElementById('f-limite').value;
+        variavel = document.getElementById('limite-v').value.trim() || 'x';
+    } else if (tipo === 'derivadas') {
+        funcao = document.getElementById('f-derivada').value;
+        variavel = document.getElementById('derivada-v').value.trim() || 'x';
+    } else if (tipo === 'integrais') {
+        funcao = document.getElementById('f-integral').value;
+        variavel = document.getElementById('integral-v').value.trim() || 'x';
+    }
+
+    if (funcao) {
+        gerarGrafico(funcao, variavel, tipo);
+    }
 }

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora de Cálculo Avançado</title>
+    <title>Calculadora de Cálculo Avançado LDI</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="container-principal">
@@ -135,6 +136,13 @@
             <div id="resultado" class="resultado-texto">Insira os dados e clique em calcular...</div>
         </div>
         </div>
+
+        <aside class="painel-grafico">
+            <h2>Gráfico</h2>
+            <div class="container-grafico">
+                <canvas id="grafico"></canvas>
+            </div>
+        </aside>
     </div>
 
     <script src="script.js"></script>
